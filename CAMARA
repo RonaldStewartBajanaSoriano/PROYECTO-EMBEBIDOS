@@ -1,0 +1,77 @@
+# Ronald Bajaña
+# Andres Robles
+# Modules
+from goto import *
+import time
+import var
+import pio
+import resource
+
+# Peripheral Configuration Code (do not edit)
+
+import cpu
+import FileStore
+import VFP
+import camera
+import Generic
+import Controls
+import RPi.GPIO as GPIO
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+
+correo_origen = '.....@gmail.com' #correo que envia
+contrasena = '' #contraseña del que envia 
+correo_destino = '......@gmail.com' #correo que recibe
+
+def peripheral_setup () :
+# Peripheral Constructors
+ pio.cpu=cpu.CPU ()
+ pio.storage=FileStore.FileStore ()
+ pio.server=VFP.VfpServer ()
+ pio.CAM1=camera.RPiCamera ()
+ pio.BTN1=Generic.Button (pio.GPIO4)
+ pio.IotPhoto1=Controls.Photo ("IotPhoto1", )
+ pio.storage.begin ()
+ pio.server.begin (0)
+ GPIO.setmode(GPIO.BCM)
+ pio.bt1=18
+ GPIO.setup(pio.bt1,GPIO.IN,GPIO.PUD_DOWN)
+# Install interrupt handlers
+
+def peripheral_loop () :
+   if GPIO.input(18):
+      pio.CAM1.capture(25)
+      time.sleep(2)
+      prueba=""
+      prueba=pio.CAM1.getLastImage()
+      pio.IotPhoto1.showImage(prueba)
+      time.sleep(3)
+      msg = MIMEText("Se paso la luz roja")
+      msg['Subject'] = 'MULTA'
+      msg['From'] = correo_origen
+      msg['To'] = correo_destino
+
+      server = smtplib.SMTP('smtp.gmail.com',587)
+      server.starttls()
+      server.login(correo_origen,contrasena)
+      server.sendmail(correo_origen,correo_destino,msg.as_string())
+
+      print("Su Email ha sido enviado.")
+
+      server.quit()
+   
+   
+   
+# Main function
+def main () :
+# Setup
+ peripheral_setup()
+# Infinite loop
+ while 1 :
+  peripheral_loop()
+  pass
+# Command line execution
+if __name__ == '__main__' :
+   main()
